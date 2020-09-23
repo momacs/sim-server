@@ -31,8 +31,10 @@ You should now see the simulation server running at [http://127.0.0.1:8080/](htt
 
 
 ![](https://i.ibb.co/sRcmL3W/pram0.png)
+
 Click the "Sample Simulation" button to run a simple simulation. The results should look like this. 
 ![](https://i.ibb.co/Mf3bMdZ/pram1.png)
+
 You can find the source code for this simulation [here.](https://github.com/momacs/pram/blob/master/src/sim/01-simple/sim.py)
 
 TODO
