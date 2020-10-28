@@ -1,0 +1,83 @@
+class DiscreteInvMarkovChain(MarkovChain, DiscreteSpacetimeStochasticProcess, StationaryProcess):
+    """Discrete-time time-homogenous Markov chain with finite state space.
+    The following sample transition model for the variables named X::
+                   x_1^t   x_2^t
+        x_1^{t+1}    0.1     0.3
+        x_2^{t+1}    0.9     0.7
+    should be specified as the following list of stochastic vectors::
+        { 'x1': [0.1, 0.9], 'x2': [0.3, 0.7] }
+    Definition:
+        A stochastic process $X = \{X_n:n \geq 0\}$ on a countable set $S$ is a Markov Chain if, for any $i,j \in S$
+        and $n \geq 0$,
+        P(X_{n+1} = j | X_0, \ldots, X_n) = P(X_{n+1} = j | X_n)
+        P(X_{n+1} = j | X_n = i) = p_{ij}
+        The $p_{ij} is the probability that the Markov chain jumps from state $i$ to state $j$.  These transition
+        probabilities satisfy $\sum_{j \in S} p_{ij} = 1, i \in S$, and the matrix $P=(pij)$ is the transition matrix
+        of the chain.
+    Rule notation A::
+        code:
+            DiscreteInvMarkovChain('flu', { 's': [0.95, 0.05, 0.00], 'i': [0.00, 0.80, 0.10], 'r': [0.10, 0.00, 0.90] })
+        init:
+            tm = {
+                s: [0.95, 0.05, 0.00],
+                i: [0.00, 0.80, 0.20],
+                r: [0.10, 0.00, 0.90]
+            }  # right stochastic matrix
+        is-applicable:
+            has-attr: flu
+        apply:
+            curr_state = group.attr.flu
+            new_state_sv = tm[]  # stochastic vector
+            move-mass:
+                new_state_sv[0] -> A:flu = 's'
+                new_state_sv[1] -> A:flu = 'i'
+                new_state_sv[2] -> A:flu = 'r'
+    Rule notation B::
+        tm_i = tm[group.attr.flu]
+        tm_i[0] -> A:flu = 's'
+        tm_i[1] -> A:flu = 'i'
+        tm_i[2] -> A:flu = 'r'
+    Args:
+        attr (str): Name of state attribute.
+        tm (Mapping[str,Iterable[float]]): Transition matrix.  Keys correspond to state names and values to lists of
+            transition probabilities.
+        name (str): Name.
+        t (:class:`~pram.rule.Time`, int, tuple[int,int], set[int]): Compatible time selector.
+        i (:class:`~pram.rule.Iter`, int, tuple[int,int], set[int]): Compatible iteration selector.
+        group_qry (GroupQry, optional): Compatible group selector.
+        memo (str, optional): Description.
+        cb_before_apply (Callable, optional): Function called before the group is split.  The signature is
+            ``fn(group, attr_val, tm)``.
+    """
+
+    def __init__(self, attr, tm, name='markov-chain', t=TimeAlways(), i=IterAlways(), memo=None, cb_before_apply=None):
+        super().__init__(name, t, i, memo)
+
+        if sum([i for x in list(tm.values()) for i in x]) != float(len(tm)):
+            raise ValueError(f"'{self.__class__.__name__}' class: Probabilities in the transition model must add up to 1")
+
+        self.attr = attr
+        self.tm = tm
+        self.states = list(self.tm.keys())  # simplify and speed-up lookup in apply()
+        self.cb_before_apply = cb_before_apply
+
+    def apply(self, pop, group, iter, t):
+        """See :meth:`pram.rule.Rule.apply <Rule.apply()>`."""
+
+        attr_val = group.get_attr(self.attr)
+        tm = self.tm.get(attr_val)
+        if tm is None:
+            raise ValueError(f"'{self.__class__.__name__}' class: Unknown state '{group.get_attr(self.attr)}' for attribute '{self.attr}'")
+        if self.cb_before_apply:
+            tm = self.cb_before_apply(group, attr_val, tm) or tm
+        return [GroupSplitSpec(p=tm[i], attr_set={ self.attr: self.states[i] }) for i in range(len(self.states)) if tm[i] > 0]
+
+    def get_states(self):
+        """Get list of states."""
+
+        return self.states
+
+    def is_applicable(self, group, iter, t):
+        """See :meth:`pram.rule.Rule.is_applicable <Rule.is_applicable()>`."""
+
+        return super().is_applicable(group, iter, t) and group.has_attr([ self.attr ])
