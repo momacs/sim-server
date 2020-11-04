@@ -60,7 +60,7 @@ def run_the_app():
 
 # This sidebar UI is a little search engine to find certain object types.
 def frame_selector_ui():
-    st.sidebar.markdown("# Pramaters")
+    st.sidebar.markdown("# Paramaters")
 
     # Choose a frame out of the selected frames.
     gsize = st.sidebar.slider("Choose group size ", 1, 10000, 0)
@@ -77,7 +77,7 @@ def frame_selector_ui():
     i3 = st.sidebar.number_input("[_,_,x]", key="i3")
 
 
-    st.sidebar.markdown("### Recoverd")
+    st.sidebar.markdown("### Recovered")
     r1 = st.sidebar.number_input("[x,_, _]", key="r1")
     r2 = st.sidebar.number_input("[_,x,_]", key="r2")
     r3 = st.sidebar.number_input("[_,_,x]", key="r3")
