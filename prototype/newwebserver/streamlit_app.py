@@ -2,7 +2,8 @@ import streamlit as st
 import altair as alt
 import pandas as pd
 import numpy as np
-import os, urllib, cv2
+import os, urllib
+import sys
 
 from pram.data   import GroupSizeProbe, ProbeMsgMode
 from pram.entity import Group, GroupQry, GroupSplitSpec, Site
@@ -31,7 +32,7 @@ def main():
 def run_the_app():
 
     # Draw the UI elements to search for objects (pedestrians, cars, etc.)
-    gsize, s1, s2, s3, i1, i2, i3, r1, r2, r3 = frame_selector_ui()
+    gsize, s1, s2, s3, i1, i2, i3, r1, r2, r3, run = frame_selector_ui()
 
     progress_flu_rule = DiscreteInvMarkovChain('flu-status',
     { 's': [s1, s2, s3], 'i': [i1, i2, i3], 'r': [r1, r2, r3] })
@@ -50,17 +51,18 @@ def run_the_app():
     s.add_probe(probe_grp_size_flu)
     s.add_group(Group('g0', gsize, { 'flu-status': 's' }))
     sys.stdout = open('out.dat', 'w')
-    s.run(24)
+    s.run(int(run))
     sys.stdout.close()
 
     with open('out.dat') as file:
         data = file.readlines()
-        data = str(self.data)
-    st.write(data)
+        for line in data:
+            st.write(line)
+    
 
 # This sidebar UI is a little search engine to find certain object types.
 def frame_selector_ui():
-    st.sidebar.markdown("# Paramaters")
+    st.sidebar.markdown("# Pramaters")
 
     # Choose a frame out of the selected frames.
     gsize = st.sidebar.slider("Choose group size ", 1, 10000, 0)
@@ -77,11 +79,14 @@ def frame_selector_ui():
     i3 = st.sidebar.number_input("[_,_,x]", key="i3")
 
 
-    st.sidebar.markdown("### Recovered")
+    st.sidebar.markdown("### Recoverd")
     r1 = st.sidebar.number_input("[x,_, _]", key="r1")
     r2 = st.sidebar.number_input("[_,x,_]", key="r2")
     r3 = st.sidebar.number_input("[_,_,x]", key="r3")
-    return gsize, s1, s2, s3, i1, i2, i3, r1, r2, r3
+    
+    run = st.sidebar.number_input("Iterations", key="itr")
+    return gsize, s1, s2, s3, i1, i2, i3, r1, r2, r3, run
 
 if __name__ == "__main__":
     main()
+
